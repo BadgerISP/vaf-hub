@@ -227,8 +227,11 @@ function loadConfig() {
   const stored = localStorage.getItem(CONFIG_KEY);
   if (stored) {
     const config = JSON.parse(stored);
-    document.getElementById('dbEndpoint').value = config.dbEndpoint || '';
-    document.getElementById('syncInterval').value = config.syncInterval || 6;
+    // Only set form values if elements exist
+    const endpoint = document.getElementById('dbEndpoint');
+    const interval = document.getElementById('syncInterval');
+    if (endpoint) endpoint.value = config.dbEndpoint || '';
+    if (interval) interval.value = config.syncInterval || 6;
   }
 }
 
