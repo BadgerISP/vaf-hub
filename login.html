@@ -137,9 +137,15 @@ input[type="text"]:focus,input[type="password"]:focus,input[type="email"]:focus{
 
 <!-- NAVIGATION -->
 <nav>
-  <a class="logo" href="index2.html">VTOL<span>VR</span> // VAF HUB</a>
-  <div class="nav-spacer"></div>
-  <a class="btn-back" href="index2.html">← Back to Hub</a>
+  <a class="logo" href="/">VTOL<span>VR</span> // VAF HUB</a>
+  <ul class="nav-links">
+    <li><a href="/">Home</a></li>
+    <li><a href="our-mission.html">Our Mission</a></li>
+    <li><a href="mission-board.html">Mission Board</a></li>
+    <li><a href="media.html">Media</a></li>
+    <li><a href="squadrons.html">Squadrons</a></li>
+  </ul>
+  <a href="/" class="btn-back">← Back to Hub</a>
   <button class="btn-back" onclick="toggleConfig()" style="margin-left:1rem;font-size:.6rem">⚙ Config</button>
 </nav>
 
@@ -598,7 +604,7 @@ function logSync(action, target, count) {
 // ============================================
 // LOGIN FORM HANDLING
 // ============================================
-function handleLogin(event) {
+async function handleLogin(event) {
   event.preventDefault();
   
   const username = document.getElementById('username').value.trim();
@@ -627,35 +633,85 @@ function handleLogin(event) {
     return;
   }
   
-  // Hash password
+  // Hash password using the same method
   const passwordHash = hashPassword(password, username);
   
-  // Submit to database
-  submitLoginToDatabase(username, passwordHash, remember).then(success => {
-    if (success) {
-      // Save session
-      const session = {
-        username: username,
-        hash: passwordHash,
-        timestamp: Date.now(),
-        remember: remember
-      };
-      
-      if (remember) {
-        localStorage.setItem(USER_SESSION_KEY, JSON.stringify(session));
-      } else {
-        sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(session));
-      }
-      
-      showSuccess('successMsg', '✓ Login successful! Redirecting...');
-      
-      setTimeout(() => {
-        window.location.href = 'index2.html';
-      }, 1500);
+  // Verify against database
+  const verified = await verifyLoginAgainstDatabase(username, passwordHash);
+  
+  if (verified) {
+    // Save session
+    const session = {
+      username: username,
+      hash: passwordHash,
+      timestamp: Date.now(),
+      remember: remember
+    };
+    
+    if (remember) {
+      localStorage.setItem(USER_SESSION_KEY, JSON.stringify(session));
     } else {
-      showError('errorMsg', '⚠ Failed to submit login. Please check database configuration.');
+      sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(session));
     }
-  });
+    
+    showSuccess('successMsg', '✓ Login successful! Admin panel unlocked.');
+    
+    // Hide login form and show config panel
+    document.querySelector('.login-form').style.display = 'none';
+    document.querySelector('.auth-toggle').style.display = 'none';
+    document.getElementById('configPanel').classList.add('show');
+    
+    setTimeout(() => {
+      document.querySelector('.login-container').style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }, 1000);
+  } else {
+    showError('errorMsg', '⚠ Invalid callsign or password. Please try again.');
+  }
+}
+
+// Verify login against the database
+async function verifyLoginAgainstDatabase(username, passwordHash) {
+  const config = getConfig();
+  
+  if (!config.dbEndpoint) {
+    showError('errorMsg', '⚠ Database endpoint not configured');
+    return false;
+  }
+  
+  try {
+    const response = await fetch(config.dbEndpoint, { 
+      cache: 'no-store',
+      headers: { 'Accept': 'application/json' }
+    });
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        showError('errorMsg', '⚠ Database not found. Contact administrator.');
+        return false;
+      }
+      throw new Error('Database error: ' + response.statusText);
+    }
+    
+    const data = await response.json();
+    const database = Array.isArray(data) ? data : (data.users || []);
+    
+    // Find user in database and verify password
+    const user = database.find(u => u.username === username);
+    
+    if (user && user.passwordHash === passwordHash) {
+      console.log('Login verified for:', username);
+      return true;
+    } else {
+      console.log('Login failed - user not found or password mismatch');
+      return false;
+    }
+    
+  } catch (error) {
+    console.error('Login verification error:', error);
+    showError('errorMsg', '⚠ Connection error. Please try again.');
+    return false;
+  }
 }
 
 // ============================================
