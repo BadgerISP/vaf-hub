@@ -257,7 +257,7 @@ function saveConfig() {
 
 function getConfig() {
   const stored = localStorage.getItem(CONFIG_KEY);
-  return stored ? JSON.parse(stored) : { dbEndpoint: '', syncInterval: 6 };
+  return stored ? JSON.parse(stored) : { dbEndpoint: '/database.json', syncInterval: 6 };
 }
 
 function toggleConfig() {
