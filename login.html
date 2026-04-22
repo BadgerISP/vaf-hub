@@ -145,77 +145,14 @@ input[type="text"]:focus,input[type="password"]:focus,input[type="email"]:focus{
     <li><a href="media.html">Media</a></li>
     <li><a href="squadrons.html">Squadrons</a></li>
   </ul>
-  <button class="btn-back" onclick="toggleConfig()" style="margin-left:1rem;font-size:.6rem">⚙ Config</button>
+  <button class="btn-back" onclick="goToHub()" style="margin-left:1rem">← Back to Hub</button>
 </nav>
 
 <!-- CONFIG PANEL -->
-<div class="config-panel" id="configPanel">
-  <div class="config-title">Admin Panel</div>
-  
-  <!-- Tabs -->
-  <div style="display:flex;gap:.5rem;margin-bottom:1rem;border-bottom:1px solid var(--gb)">
-    <button class="config-tab active" onclick="switchTab('database')">Database</button>
-    <button class="config-tab" onclick="switchTab('missions')">Missions</button>
-    <button class="config-tab" onclick="switchTab('media')">Media</button>
-  </div>
-
-  <!-- Database Tab -->
-  <div id="tab-database" class="config-tab-content">
-    <div class="config-item">
-      <label>Database Endpoint URL</label>
-      <input type="text" id="dbEndpoint" placeholder="https://your-site.pages.dev/database.json" value="https://m3mayer.com/database.json"/>
-    </div>
-    <div class="config-item">
-      <label>Sync Interval (hours)</label>
-      <input type="number" id="syncInterval" min="0.5" max="24" step="0.5" value="6"/>
-    </div>
-    <button class="config-btn" onclick="saveConfig()">Save Configuration</button>
-    <button class="config-btn" onclick="syncNow()" style="margin-top:.3rem;background:#6aa3ff">Sync Now</button>
-  </div>
-
-  <!-- Missions Tab -->
-  <div id="tab-missions" class="config-tab-content" style="display:none">
-    <div class="config-item">
-      <label>Mission Name</label>
-      <input type="text" id="missionName" placeholder="Operation AURORA"/>
-    </div>
-    <div class="config-item">
-      <label>Scheduled Date/Time (UTC)</label>
-      <input type="text" id="missionDate" placeholder="2026-04-28 19:00 UTC"/>
-    </div>
-    <div class="config-item">
-      <label>Briefing</label>
-      <textarea id="missionBriefing" placeholder="Operation briefing..." style="width:100%;min-height:80px;padding:8px;background:rgba(58,95,255,.05);border:1px solid var(--gb);color:var(--tp);font-family:monospace;font-size:.75rem"></textarea>
-    </div>
-    <button class="config-btn" onclick="saveMission()">Update Mission</button>
-  </div>
-
-  <!-- Media Tab -->
-  <div id="tab-media" class="config-tab-content" style="display:none">
-    <div class="config-item">
-      <label>Media Title</label>
-      <input type="text" id="mediaTitle" placeholder="Carrier Landing"/>
-    </div>
-    <div class="config-item">
-      <label>Description</label>
-      <textarea id="mediaDescription" placeholder="Media description..." style="width:100%;min-height:60px;padding:8px;background:rgba(58,95,255,.05);border:1px solid var(--gb);color:var(--tp);font-family:monospace;font-size:.75rem"></textarea>
-    </div>
-    <div class="config-item">
-      <label>Author/Pilot</label>
-      <input type="text" id="mediaAuthor" placeholder="Pilot Callsign"/>
-    </div>
-    <div class="config-item">
-      <label>Date Posted</label>
-      <input type="text" id="mediaDate" placeholder="2 days ago"/>
-    </div>
-    <button class="config-btn" onclick="addMediaEntry()">Add Media</button>
-  </div>
-
-  <button class="config-btn" onclick="toggleConfig()" style="margin-top:1rem;background:#cc5555;width:100%">Close Panel</button>
-</div>
+<!-- Removed: Database config panel now only in code -->
 
 <!-- SYNC STATUS -->
-<div class="sync-status" id="syncStatus">
+<div class="sync-status" id="syncStatus" style="display:none">
   <div class="sync-dot"></div>
   <span>Ready</span>
 </div>
@@ -653,17 +590,12 @@ async function handleLogin(event) {
       sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(session));
     }
     
-    showSuccess('successMsg', '✓ Login successful! Admin panel unlocked.');
+    showSuccess('successMsg', '✓ Login successful! Redirecting to admin portal...');
     
-    // Hide login form and show config panel
-    document.querySelector('.login-form').style.display = 'none';
-    document.querySelector('.auth-toggle').style.display = 'none';
-    document.getElementById('configPanel').classList.add('show');
-    
+    // Redirect to admin portal after short delay
     setTimeout(() => {
-      document.querySelector('.login-container').style.display = 'none';
-      document.body.style.overflow = 'auto';
-    }, 1000);
+      window.location.href = 'admin-portal.html';
+    }, 1500);
   } else {
     showError('errorMsg', '⚠ Invalid callsign or password. Please try again.');
   }
@@ -746,6 +678,10 @@ function logout() {
 // ============================================
 // UI HELPERS
 // ============================================
+function goToHub() {
+  window.location.href = 'https://vaf-hub.m3-826.workers.dev/';
+}
+
 function showError(elementId, message) {
   const elem = document.getElementById(elementId);
   elem.textContent = message;
