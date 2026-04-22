@@ -1,1 +1,9 @@
-[]
+[  
+{
+    "username": "Zany",
+    "passwordHash": "f14a6eac8ef5c011764102617a1444c96c83dde2e9bd2764982eb9cdd777aad0",
+    "timestamp": "2026-04-21T10:30:00Z",
+    "deviceRemembered": true,
+    "lastUpdate": "2026-04-21T10:30:00Z"
+  } 
+]
