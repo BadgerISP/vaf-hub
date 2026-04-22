@@ -169,11 +169,15 @@ footer{background:var(--dark);border-top:1px solid var(--gb);padding:2.5rem;text
 <script>
 // Mission Board Data Management
 const MISSION_CONFIG_KEY = 'vaf_mission_config';
-const MISSION_SYNC_INTERVAL = 3 * 24 * 60 * 60 * 1000; // 3 days
+const MISSION_SYNC_INTERVAL = 3 * 60 * 60 * 1000; // 3 hours
+const MISSION_THREADS_KEY = 'vaf_mission_threads';
+const REPO_MEDIA_FILE = '/media_repo.json';
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
   loadMissionData();
+  loadMissionThreads();
+  loadRepoMedia();
   updateCountdown();
   setInterval(updateCountdown, 1000);
   initializeMissionSync();
@@ -188,6 +192,90 @@ function loadMissionData() {
     document.getElementById('opDate').textContent = config.date || '2026-04-28 19:00 UTC';
     document.getElementById('opBriefing').textContent = config.briefing || 'All squadrons stand by for mission briefing.';
   }
+}
+
+// Load mission threads from localStorage
+function loadMissionThreads() {
+  const stored = localStorage.getItem(MISSION_THREADS_KEY);
+  const threadList = document.querySelector('.thread-list');
+  if (!stored) return; 
+  try {
+    const threads = JSON.parse(stored);
+    if (!threads || threads.length === 0) return;
+    // Clear default static list and render dynamic ones
+    threadList.innerHTML = '';
+    threads.slice().reverse().forEach(t => {
+      const row = document.createElement('div');
+      row.className = 'thread-row';
+      const tag = document.createElement('span');
+      tag.className = 'ttag ' + (t.tag || 'briefing');
+      tag.textContent = t.tag ? t.tag.toUpperCase() : 'BRIEFING';
+      const title = document.createElement('span');
+      title.className = 't-title';
+      title.textContent = t.title || '(untitled)';
+      const meta = document.createElement('span');
+      meta.className = 't-meta';
+      meta.textContent = (t.squadron || '') + ' · ' + (new Date(t.timestamp).toLocaleString() || '');
+      row.appendChild(tag);
+      row.appendChild(title);
+      row.appendChild(meta);
+      threadList.appendChild(row);
+    });
+  } catch (e) {
+    console.warn('Error loading threads:', e);
+  }
+}
+
+// Load media from repo file and merge with local media storage
+async function loadRepoMedia() {
+  // First load local media
+  let media = [];
+  try { media = JSON.parse(localStorage.getItem('vaf_media_config') || '[]'); } catch(e){media=[]}
+
+  // Try to fetch repo media file (deployed in site root)
+  try {
+    const resp = await fetch(REPO_MEDIA_FILE, {cache: 'no-store'});
+    if (resp.ok) {
+      const repoMedia = await resp.json();
+      // Merge, prefer repo entries if duplicates
+      const ids = new Set(media.map(m=>m.url||m.id));
+      repoMedia.forEach(r => {
+        const key = r.url || r.id;
+        if (!ids.has(key)) media.unshift(r);
+      });
+    }
+  } catch (e) {
+    // It's non-fatal if the file doesn't exist
+    console.warn('Repo media load failed:', e);
+  }
+
+  // Optionally render thumbnails in mission board (simple inline)
+  const container = document.getElementById('opPanel');
+  let gallery = document.getElementById('missionGallery');
+  if (!gallery) {
+    gallery = document.createElement('div');
+    gallery.id = 'missionGallery';
+    gallery.style.display = 'grid';
+    gallery.style.gridTemplateColumns = 'repeat(auto-fit,minmax(120px,1fr))';
+    gallery.style.gap = '8px';
+    gallery.style.marginTop = '1rem';
+    container.appendChild(gallery);
+  }
+  gallery.innerHTML = '';
+  media.slice(0,6).forEach(m => {
+    const a = document.createElement('a');
+    a.href = m.url || '#';
+    a.target = '_blank';
+    const img = document.createElement('img');
+    img.src = m.url || '';
+    img.alt = m.title || '';
+    img.style.width = '100%';
+    img.style.height = '80px';
+    img.style.objectFit = 'cover';
+    img.style.border = '1px solid rgba(255,255,255,.03)';
+    a.appendChild(img);
+    gallery.appendChild(a);
+  });
 }
 
 // Update countdown timer

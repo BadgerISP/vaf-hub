@@ -95,6 +95,7 @@ footer{background:var(--dark);border-top:1px solid var(--gb);padding:2.5rem;text
   <p class="sec-tag">// Community Content</p>
   <h1 class="sec-title">Media Gallery</h1>
   <div class="sync-status" id="syncStatus">Last synced: Never</div>
+    <div class="sync-status" id="syncStatus">Last synced: Never</div>
 
   <!-- MEDIA GRID -->
   <div class="media-grid" id="mediaGrid">
@@ -186,6 +187,8 @@ const MEDIA_SYNC_INTERVAL = 12 * 60 * 60 * 1000; // 12 hours
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
   loadMediaData();
+  const REPO_MEDIA_FILE = '/media_repo.json';
+  loadRepoMedia();
   updateSyncStatus();
   initializeMediaSync();
 });
@@ -229,6 +232,23 @@ function loadMediaData() {
     } catch (e) {
       console.warn('Media data parse error:', e);
     }
+  }
+}
+
+async function loadRepoMedia() {
+  // Merge repo media into localStorage media list
+  try {
+    const resp = await fetch(REPO_MEDIA_FILE, {cache:'no-store'});
+    if (!resp.ok) return;
+    const repo = await resp.json();
+    let local = [];
+    try { local = JSON.parse(localStorage.getItem('vaf_media_config') || '[]'); } catch(e){local=[]}
+    const keys = new Set(local.map(m=>m.url||m.id));
+    repo.forEach(r => { const key = r.url||r.id; if (!keys.has(key)) local.unshift(r); });
+    localStorage.setItem('vaf_media_config', JSON.stringify(local));
+    renderMediaGrid();
+  } catch (e) {
+    console.warn('Failed to load repo media', e);
   }
 }
 
